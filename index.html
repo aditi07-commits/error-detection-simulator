@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Error Detection & Correction</title>
+  <style>
+    :root {
+      --bg: #eef2f6;
+      --card: #ffffff;
+      --soft: #f8fafc;
+      --border: #cbd5e1;
+      --ink: #0f172a;
+      --muted: #475569;
+      --blue: #0284c7;
+      --blue-bg: #e0f2fe;
+      --indigo: #4f46e5;
+      --indigo-bg: #eef2ff;
+      --green: #059669;
+      --green-bg: #d1fae5;
+      --red: #e11d48;
+      --red-bg: #ffe4e6;
+      --amber: #d97706;
+      --amber-bg: #fef3c7;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: linear-gradient(160deg, #e0f2fe 0%, var(--bg) 50%, #eef2ff 100%);
+      background-attachment: fixed;
+      color: var(--ink);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    header {
+      background: linear-gradient(120deg, #0369a1, #4f46e5);
+      color: #fff;
+      padding: 1rem 1.25rem;
+    }
+
+    .wrap { max-width: 860px; margin: 0 auto; }
+
+    .top {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .top h1 { font-size: 1.3rem; }
+
+    .tabs {
+      display: flex;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 0.2rem;
+      border-radius: 999px;
+      gap: 0.2rem;
+    }
+
+    .tabs button {
+      border: none;
+      background: transparent;
+      color: #fff;
+      padding: 0.42rem 1rem;
+      border-radius: 999px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .tabs button.active { background: #fff; color: #0369a1; }
+
+    main { max-width: 860px; margin: 1.2rem auto 2.5rem; padding: 0 1rem; }
+
+    .page { display: none; }
+    .page.active { display: block; }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.2rem;
+      margin-bottom: 1rem;
+    }
+
+    .head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.85rem;
+    }
+
+    .head h2 { font-size: 1.1rem; color: #0369a1; }
+
+    .pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .pill {
+      border: 2px solid var(--border);
+      background: #fff;
+      border-radius: 9px;
+      padding: 0.5rem 0.9rem;
+      font-weight: 700;
+      font-size: 0.94rem;
+      cursor: pointer;
+      color: var(--ink);
+    }
+
+    .pill.active {
+      border-color: var(--blue);
+      background: var(--blue-bg);
+      color: #0369a1;
+    }
+
+    .visual-pair {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 0.9rem;
+      margin-bottom: 1rem;
+    }
+
+    .diagram {
+      background: var(--soft);
+      border: 1.5px solid #bfdbfe;
+      border-radius: 10px;
+      padding: 0.75rem;
+    }
+
+    .diagram-label {
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #0369a1;
+      margin-bottom: 0.45rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .diagram svg { width: 100%; height: auto; display: block; }
+
+    .pts {
+      list-style: none;
+      display: grid;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+      font-size: 1rem;
+    }
+
+    .pts li {
+      background: var(--soft);
+      border-left: 4px solid var(--blue);
+      padding: 0.6rem 0.85rem;
+      border-radius: 6px;
+      color: var(--ink);
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 0.75rem;
+    }
+
+    label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 0.25rem;
+    }
+
+    select, input[type="text"] {
+      width: 100%;
+      padding: 0.5rem 0.65rem;
+      border: 1.5px solid var(--border);
+      border-radius: 8px;
+      font-family: Consolas, monospace;
+      font-size: 0.9rem;
+      background: var(--soft);
+      color: var(--ink);
+    }
+
+    .word-row {
+      display: flex;
+      gap: 0.45rem;
+      margin-top: 0.65rem;
+      flex-wrap: wrap;
+    }
+
+    .word-row input { flex: 1; min-width: 150px; font-family: 'Segoe UI', system-ui, sans-serif; }
+
+    .btn {
+      border: none;
+      border-radius: 8px;
+      padding: 0.55rem 0.95rem;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+
+    .btn-blue { background: var(--blue); color: #fff; }
+    .btn-soft { background: #e2e8f0; color: var(--ink); }
+
+    .bits {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-top: 0.75rem;
+    }
+
+    .bit {
+      width: 44px;
+      height: 50px;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: Consolas, monospace;
+    }
+
+    .b-d { background: var(--blue-bg); border: 2px solid #38bdf8; color: #0369a1; }
+    .b-c { background: var(--amber-bg); border: 2px solid #fbbf24; color: #92400e; }
+    .b-err { background: var(--red-bg) !important; border: 2px solid var(--red) !important; color: #be123c !important; }
+
+    .bit strong { font-size: 1.05rem; }
+    .bit span { font-size: 0.62rem; font-weight: 700; }
+
+    .banner {
+      padding: 0.7rem 0.9rem;
+      border-radius: 8px;
+      font-weight: 700;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 0.7rem;
+    }
+
+    .ok { background: var(--green-bg); color: #065f46; }
+    .err { background: var(--red-bg); color: #9f1239; }
+    .fix { background: var(--indigo-bg); color: #3730a3; }
+
+    .out-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.7rem;
+    }
+
+    .box {
+      background: var(--soft);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.65rem 0.8rem;
+      font-size: 0.86rem;
+    }
+
+    .box.good { background: var(--green-bg); border-color: #6ee7b7; color: #065f46; }
+    .mono { font-family: Consolas, monospace; font-weight: 700; display: block; margin: 0.15rem 0; }
+
+    .alts {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+      gap: 0.65rem;
+    }
+
+    .alt {
+      background: var(--soft);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.7rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .alt p { font-size: 0.82rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="wrap top">
+      <h1>Error Detection &amp; Correction</h1>
+      <div class="tabs">
+        <button class="active" id="tabGuide" onclick="openTab('guide')">Guide</button>
+        <button id="tabSim" onclick="openTab('sim')">Simulator</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="guide" class="page active">
+      <div class="card">
+        <div class="head"><h2>4 Methods</h2></div>
+        <div class="pills">
+          <button class="pill active" onclick="pickGuide(0, this)">Parity</button>
+          <button class="pill" onclick="pickGuide(1, this)">Checksum</button>
+          <button class="pill" onclick="pickGuide(2, this)">CRC</button>
+          <button class="pill" onclick="pickGuide(3, this)">Hamming</button>
+        </div>
+        <div id="guideBody"></div>
+      </div>
+    </section>
+
+    <section id="sim" class="page">
+      <div class="card">
+        <div class="head"><h2>1. Data &amp; Method</h2></div>
+        <div class="grid-2">
+          <div>
+            <label for="algo">Method</label>
+            <select id="algo" onchange="runSim()">
+              <option value="parity_even">Even Parity</option>
+              <option value="parity_odd">Odd Parity</option>
+              <option value="checksum">Checksum</option>
+              <option value="crc">CRC (1011)</option>
+              <option value="hamming">Hamming</option>
+            </select>
+          </div>
+          <div>
+            <label for="data">Bits (0s and 1s)</label>
+            <input type="text" id="data" value="1011001" onkeydown="if(event.key==='Enter') runSim()" onblur="runSim()" />
+          </div>
+        </div>
+        <div class="word-row">
+          <input type="text" id="wordInput" placeholder="Word to bits (e.g. HI)" maxlength="2" />
+          <button class="btn btn-soft" onclick="wordToBits()">To Bits</button>
+          <button class="btn btn-blue" onclick="runSim()">Update</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="head"><h2>2. Errors</h2></div>
+        <div class="grid-3">
+          <div>
+            <label for="errType">Mode</label>
+            <select id="errType" onchange="toggleInputs(); runSim();">
+              <option value="none">No Error</option>
+              <option value="one">1-Bit Error</option>
+              <option value="two">2-Bit Error</option>
+              <option value="burst">Burst (2 bits)</option>
+            </select>
+          </div>
+          <div>
+            <label for="pos1">Bit #1</label>
+            <select id="pos1" onchange="runSim()" disabled></select>
+          </div>
+          <div>
+            <label for="pos2">Bit #2</label>
+            <select id="pos2" onchange="runSim()" disabled></select>
+          </div>
+        </div>
+        <div class="bits" id="bitsRow"></div>
+      </div>
+
+      <div class="card">
+        <div class="head"><h2>3. Output</h2></div>
+        <div id="statusBanner" class="banner ok"></div>
+        <div class="out-grid">
+          <div class="box" id="rxCard"></div>
+          <div class="box good" id="rightCard"></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="head"><h2>Other 3 Methods</h2></div>
+        <div class="alts" id="altCards"></div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const visuals = [
+      {
+        /* PARITY: Counter -> Single bit -> Even/Odd check */
+        flow: `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg">
+          <rect x="20" y="14" width="145" height="56" rx="10" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+          <text x="92" y="38" text-anchor="middle" font-size="13" font-weight="bold" fill="#0369a1">Count 1s</text>
+          <text x="92" y="57" text-anchor="middle" font-size="12" fill="#0f172a">In data bits</text>
+          <line x1="165" y1="42" x2="195" y2="42" stroke="#475569" stroke-width="2.2"/>
+          <polygon points="195,37 205,42 195,47" fill="#475569"/>
+          <rect x="205" y="14" width="135" height="56" rx="10" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+          <text x="272" y="38" text-anchor="middle" font-size="13" font-weight="bold" fill="#92400e">Add 1 Bit</text>
+          <text x="272" y="57" text-anchor="middle" font-size="12" fill="#92400e">0 or 1 at end</text>
+          <line x1="272" y1="70" x2="272" y2="104" stroke="#475569" stroke-width="2.2"/>
+          <polygon points="267,104 277,104 272,114" fill="#475569"/>
+          <rect x="175" y="114" width="165" height="44" rx="22" fill="#eef2ff" stroke="#4f46e5" stroke-width="2"/>
+          <text x="257" y="141" text-anchor="middle" font-size="13" font-weight="bold" fill="#3730a3">1s still even/odd?</text>
+          <line x1="175" y1="136" x2="105" y2="136" stroke="#059669" stroke-width="2.2"/>
+          <line x1="105" y1="136" x2="105" y2="164" stroke="#059669" stroke-width="2.2"/>
+          <rect x="35" y="164" width="130" height="38" rx="8" fill="#d1fae5" stroke="#059669" stroke-width="2"/>
+          <text x="100" y="188" text-anchor="middle" font-size="13" font-weight="bold" fill="#065f46">Yes → Pass</text>
+          <line x1="272" y1="158" x2="272" y2="164" stroke="#e11d48" stroke-width="2.2"/>
+          <rect x="205" y="164" width="135" height="38" rx="8" fill="#ffe4e6" stroke="#e11d48" stroke-width="2"/>
+          <text x="272" y="188" text-anchor="middle" font-size="13" font-weight="bold" fill="#9f1239">No → Error</text>
+        </svg>`,
+        step: `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg">
+          <text x="16" y="26" font-size="13" font-weight="bold" fill="#0369a1">1-Bit vs 2-Bit Flips (Even Parity)</text>
+          <rect x="16" y="40" width="328" height="46" rx="8" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+          <text x="180" y="68" text-anchor="middle" font-size="15" font-family="Consolas" font-weight="bold" fill="#0f172a">1  0  1  1  0  0  1  |  0   (4 ones)</text>
+          <rect x="16" y="98" width="328" height="48" rx="8" fill="#ffe4e6" stroke="#e11d48" stroke-width="2"/>
+          <text x="180" y="120" text-anchor="middle" font-size="13" font-family="Consolas" font-weight="bold" fill="#9f1239">Flip 1 bit: 1  1  1  1  0  0  1  |  0</text>
+          <text x="180" y="139" text-anchor="middle" font-size="12" font-weight="bold" fill="#be123c">5 ones (odd) → Caught!</text>
+          <rect x="16" y="158" width="328" height="48" rx="8" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+          <text x="180" y="180" text-anchor="middle" font-size="13" font-family="Consolas" font-weight="bold" fill="#92400e">Flip 2 bits: 1  1  0  1  0  0  1  |  0</text>
+          <text x="180" y="199" text-anchor="middle" font-size="12" font-weight="bold" fill="#b45309">4 ones (still even) → Missed</text>
+        </svg>`
+      },
+      {
+        /* CHECKSUM: Stacked blocks -> Sum + carry wrap -> Invert */
+        flow: `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg">
+          <rect x="18" y="16" width="142" height="40" rx="8" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+          <text x="89" y="41" text-anchor="middle" font-size="13" font-weight="bold" fill="#0369a1">Block A</text>
+          <rect x="18" y="64" width="142" height="40" rx="8" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+          <text x="89" y="89" text-anchor="middle" font-size="13" font-weight="bold" fill="#0369a1">Block B</text>
+          <path d="M 160 36 L 182 36 L 182 84 L 160 84" fill="none" stroke="#475569" stroke-width="2.2"/>
+          <line x1="182" y1="60" x2="202" y2="60" stroke="#475569" stroke-width="2.2"/>
+          <polygon points="202,55 212,60 202,65" fill="#475569"/>
+          <rect x="212" y="36" width="130" height="48" rx="8" fill="#eef2ff" stroke="#4f46e5" stroke-width="2"/>
+          <text x="277" y="57" text-anchor="middle" font-size="13" font-weight="bold" fill="#3730a3">Add + Wrap</text>
+          <text x="277" y="75" text-anchor="middle" font-size="12" fill="#4338ca">Fold carry in</text>
+          <line x1="277" y1="84" x2="277" y2="114" stroke="#475569" stroke-width="2.2"/>
+          <polygon points="272,114 282,114 277,124" fill="#475569"/>
+          <rect x="195" y="124" width="150" height="42" rx="8" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+          <text x="270" y="150" text-anchor="middle" font-size="13" font-weight="bold" fill="#92400e">Flip Bits (0↔1)</text>
+          <line x1="195" y1="145" x2="155" y2="145" stroke="#059669" stroke-width="2.2"/>
+          <polygon points="155,140 145,145 155,150" fill="#059669"/>
+          <rect x="18" y="124" width="127" height="42" rx="8" fill="#d1fae5" stroke="#059669" stroke-width="2"/>
+          <text x="81" y="150" text-anchor="middle" font-size="13" font-weight="bold" fill="#065f46">Send All</text>
+          <text x="180" y="198" text-anchor="middle" font-size="12" font-weight="bold" fill="#334155">Receiver adds all → flipped sum = 0000 means OK</text>
+        </svg>`,
+        step: `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg">
+          <text x="16" y="26" font-size="13" font-weight="bold" fill="#0369a1">4-Bit Block Addition</text>
+          <rect x="16" y="38" width="152" height="56" rx="8" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+          <text x="92" y="61" text-anchor="middle" font-size="13" font-family="Consolas" font-weight="bold" fill="#0f172a">  1011</text>
+          <text x="92" y="82" text-anchor="middle" font-size="13" font-family="Consolas" font-weight="bold" fill="#0f172a">+ 0010</text>
+          <line x1="168" y1="66" x2="188" y2="66" stroke="#475569" stroke-width="2.2"/>
+          <polygon points="188,61 198,66 188,71" fill="#475569"/>
+          <rect x="198" y="38" width="146" height="56" rx="8" fill="#eef2ff" stroke="#4f46e5" stroke-width="2"/>
+          <text x="271" y="61" text-anchor="middle" font-size="13" font-family="Consolas" font-weight="bold" fill="#3730a3">Sum: 1101</text>
+          <text x="271" y="82" text-anchor="middle" font-size="12" font-weight="bold" fill="#4338ca">No carry bit</text>
+          <rect x="16" y="112" width="328" height="44" rx="8" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+          <text x="180" y="139" text-anchor="middle" font-size="14" font-family="Consolas" font-weight="bold" fill="#92400e">Flip 1101 → Checksum = 0010</text>
+          <rect x="16" y="168" width="328" height="38" rx="8" fill="#d1fae5" stroke="#059669" stroke-width="2"/>
+          <text x="180" y="192" text-anchor="middle" font-size="13" font-family="Consolas" font-weight="bold" fill="#065f46">Sent: 1011 0010 | 0010</text>
+        </svg>`
+      },
+      {
+        /* CRC: Staircase XOR division -> Remainder */
+        flow: `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg">
+          <rect x="16" y="14" width="150" height="44" rx="8" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+          <text x="91" y="41" text-anchor="middle" font-size="13" font-weight="bold" fill="#0369a1">Data + 000</text>
+          <line x1="91" y1="58" x2="91" y2="76" stroke="#475569" stroke-width="2.2"/>
+          <polygon points="86,76 96,76 91,86" fill="#475569"/>
+          <rect x="16" y="86" width="165" height="54" rx="8" fill="#eef2ff" stroke="#4f46e5" stroke-width="2"/>
+          <text x="98" y="109" text-anchor="middle" font-size="13" font-weight="bold" fill="#3730a3">XOR with 1011</text>
+          <text x="98" y="128" text-anchor="middle" font-size="12" fill="#4338ca">Shift &amp; repeat</text>
+          <line x1="181" y1="113" x2="205" y2="113" stroke="#475569" stroke-width="2.2"/>
+          <polygon points="205,108 215,113 205,118" fill="#475569"/>
+          <rect x="215" y="86" width="129" height="54" rx="8" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+          <text x="279" y="109" text-anchor="middle" font-size="13" font-weight="bold" fill="#92400e">Remainder</text>
+          <text x="279" y="128" text-anchor="middle" font-size="12" font-weight="bold" fill="#b45309">3 leftover bits</text>
+          <line x1="279" y1="140" x2="279" y2="158" stroke="#059669" stroke-width="2.2"/>
+          <rect x="145" y="158" width="199" height="44" rx="8" fill="#d1fae5" stroke="#059669" stroke-width="2"/>
+          <text x="244" y="185" text-anchor="middle" font-size="13" font-weight="bold" fill="#065f46">Send Data + Remainder</text>
+        </svg>`,
+        step: `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg">
+          <text x="16" y="26" font-size="13" font-weight="bold" fill="#0369a1">XOR Division Ladder (Key: 1011)</text>
+          <rect x="16" y="38" width="328" height="42" rx="8" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+          <text x="180" y="64" text-anchor="middle" font-size="14" font-family="Consolas" font-weight="bold" fill="#0f172a">Start: 1011001000</text>
+          <rect x="44" y="90" width="300" height="42" rx="8" fill="#eef2ff" stroke="#4f46e5" stroke-width="2"/>
+          <text x="194" y="116" text-anchor="middle" font-size="13" font-family="Consolas" font-weight="bold" fill="#3730a3">Step XORs: 1011 ··· 1011</text>
+          <rect x="84" y="142" width="260" height="62" rx="8" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+          <text x="214" y="167" text-anchor="middle" font-size="14" font-family="Consolas" font-weight="bold" fill="#92400e">End Remainder: 011</text>
+          <text x="214" y="190" text-anchor="middle" font-size="12" font-weight="bold" fill="#065f46">Sent: 1011001011</text>
+        </svg>`
+      },
+      {
+        /* HAMMING: Position grid -> Failing check sum -> Flip back */
+        flow: `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg">
+          <rect x="16" y="16" width="150" height="52" rx="8" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+          <text x="91" y="38" text-anchor="middle" font-size="13" font-weight="bold" fill="#0369a1">Check Bits</text>
+          <text x="91" y="56" text-anchor="middle" font-size="12" fill="#0f172a">At spots 1, 2, 4...</text>
+          <line x1="166" y1="42" x2="192" y2="42" stroke="#475569" stroke-width="2.2"/>
+          <polygon points="192,37 202,42 192,47" fill="#475569"/>
+          <rect x="202" y="16" width="142" height="52" rx="8" fill="#ffe4e6" stroke="#e11d48" stroke-width="2"/>
+          <text x="273" y="38" text-anchor="middle" font-size="13" font-weight="bold" fill="#9f1239">1 Bit Flips</text>
+          <text x="273" y="56" text-anchor="middle" font-size="12" fill="#be123c">Noise hits frame</text>
+          <line x1="273" y1="68" x2="273" y2="96" stroke="#475569" stroke-width="2.2"/>
+          <polygon points="268,96 278,96 273,106" fill="#475569"/>
+          <rect x="155" y="106" width="189" height="46" rx="8" fill="#eef2ff" stroke="#4f46e5" stroke-width="2"/>
+          <text x="249" y="126" text-anchor="middle" font-size="13" font-weight="bold" fill="#3730a3">Add Failing Spots</text>
+          <text x="249" y="144" text-anchor="middle" font-size="12" fill="#4338ca">Gives exact bit #</text>
+          <line x1="249" y1="152" x2="249" y2="168" stroke="#059669" stroke-width="2.2"/>
+          <rect x="115" y="168" width="229" height="38" rx="8" fill="#d1fae5" stroke="#059669" stroke-width="2"/>
+          <text x="229" y="192" text-anchor="middle" font-size="13" font-weight="bold" fill="#065f46">Flip That Bit Back → Fixed!</text>
+        </svg>`,
+        step: `<svg viewBox="0 0 360 220" xmlns="http://www.w3.org/2000/svg">
+          <text x="16" y="26" font-size="13" font-weight="bold" fill="#0369a1">Spot #5 Flips → Fixed</text>
+          <rect x="16" y="38" width="60" height="52" rx="7" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+          <text x="46" y="58" text-anchor="middle" font-size="11" font-weight="bold" fill="#92400e">#1</text>
+          <text x="46" y="78" text-anchor="middle" font-size="14" font-family="Consolas" font-weight="bold">P1</text>
+          <rect x="82" y="38" width="60" height="52" rx="7" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+          <text x="112" y="58" text-anchor="middle" font-size="11" font-weight="bold" fill="#92400e">#2</text>
+          <text x="112" y="78" text-anchor="middle" font-size="14" font-family="Consolas" font-weight="bold">P2</text>
+          <rect x="148" y="38" width="60" height="52" rx="7" fill="#e0f2fe" stroke="#0284c7" stroke-width="2"/>
+          <text x="178" y="58" text-anchor="middle" font-size="11" font-weight="bold" fill="#0369a1">#3</text>
+          <text x="178" y="78" text-anchor="middle" font-size="14" font-family="Consolas" font-weight="bold">D1</text>
+          <rect x="214" y="38" width="60" height="52" rx="7" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+          <text x="244" y="58" text-anchor="middle" font-size="11" font-weight="bold" fill="#92400e">#4</text>
+          <text x="244" y="78" text-anchor="middle" font-size="14" font-family="Consolas" font-weight="bold">P4</text>
+          <rect x="280" y="38" width="64" height="52" rx="7" fill="#ffe4e6" stroke="#e11d48" stroke-width="2"/>
+          <text x="312" y="58" text-anchor="middle" font-size="11" font-weight="bold" fill="#9f1239">#5</text>
+          <text x="312" y="78" text-anchor="middle" font-size="14" font-family="Consolas" font-weight="bold" fill="#be123c">D2*</text>
+          <rect x="16" y="106" width="328" height="46" rx="8" fill="#eef2ff" stroke="#4f46e5" stroke-width="2"/>
+          <text x="180" y="134" text-anchor="middle" font-size="13" font-family="Consolas" font-weight="bold" fill="#3730a3">Checks #1 and #4 fail → 1 + 4 = 5</text>
+          <rect x="16" y="162" width="328" height="44" rx="8" fill="#d1fae5" stroke="#059669" stroke-width="2"/>
+          <text x="180" y="189" text-anchor="middle" font-size="13" font-weight="bold" fill="#065f46">Flip bit #5 back to original value</text>
+        </svg>`
+      }
+    ];
+
+    const guides = [
+      {
+        title: "Parity",
+        pts: [
+          "Counts 1s and adds 1 bit to keep the total even or odd.",
+          "Very simple and fast for a 1-bit check.",
+          "Misses 2-bit flips and cannot fix errors."
+        ],
+        key: "parity_even"
+      },
+      {
+        title: "Checksum",
+        pts: [
+          "Splits bits into 4-bit blocks, adds them, and flips the sum.",
+          "Checks a group of bits together.",
+          "Detects errors only; cannot fix them."
+        ],
+        key: "checksum"
+      },
+      {
+        title: "CRC",
+        pts: [
+          "Divides data with XOR using key 1011 and keeps the remainder.",
+          "Catches 2-bit and burst errors reliably.",
+          "Detects errors only; cannot fix them."
+        ],
+        key: "crc"
+      },
+      {
+        title: "Hamming",
+        pts: [
+          "Places check bits at positions 1, 2, 4...",
+          "Finds and fixes a 1-bit error automatically.",
+          "Only auto-fixes 1 flipped bit."
+        ],
+        key: "hamming"
+      }
+    ];
+
+    function pickGuide(i, btn) {
+      document.querySelectorAll('.pill').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      const g = guides[i];
+      const v = visuals[i];
+      document.getElementById('guideBody').innerHTML = `
+        <div class="visual-pair">
+          <div class="diagram">
+            <div class="diagram-label">Flowchart</div>
+            ${v.flow}
+          </div>
+          <div class="diagram">
+            <div class="diagram-label">Bit Diagram</div>
+            ${v.step}
+          </div>
+        </div>
+        <ul class="pts">${g.pts.map(p => `<li>${p}</li>`).join('')}</ul>
+        <button class="btn btn-blue" onclick="tryInSim('${g.key}')">Try ${g.title} →</button>
+      `;
+    }
+
+    function openTab(id) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById(id).classList.add('active');
+      document.getElementById('tabGuide').classList.toggle('active', id === 'guide');
+      document.getElementById('tabSim').classList.toggle('active', id === 'sim');
+      if (id === 'sim') runSim();
+    }
+
+    function tryInSim(key) {
+      document.getElementById('algo').value = key;
+      openTab('sim');
+    }
+
+    function wordToBits() {
+      const txt = document.getElementById('wordInput').value;
+      if (!txt) return;
+      let out = '';
+      for (let i = 0; i < txt.length; i++) out += txt.charCodeAt(i).toString(2).padStart(8, '0');
+      document.getElementById('data').value = out.slice(0, 12);
+      runSim();
+    }
+
+    function toggleInputs() {
+      const t = document.getElementById('errType').value;
+      document.getElementById('pos1').disabled = t === 'none';
+      document.getElementById('pos2').disabled = t !== 'two';
+    }
+
+    function fillPositions(len) {
+      ['pos1', 'pos2'].forEach((id, idx) => {
+        const el = document.getElementById(id);
+        const old = parseInt(el.value, 10) || (idx === 0 ? 1 : Math.min(2, len));
+        el.innerHTML = '';
+        for (let i = 1; i <= len; i++) {
+          const opt = document.createElement('option');
+          opt.value = i;
+          opt.textContent = `#${i}`;
+          el.appendChild(opt);
+        }
+        el.value = old <= len ? old : 1;
+      });
+    }
+
+    function getBadSpots(len) {
+      const t = document.getElementById('errType').value;
+      const p1 = Math.min(len, Math.max(1, parseInt(document.getElementById('pos1').value, 10) || 1)) - 1;
+      if (t === 'none') return [];
+      if (t === 'one') return [p1];
+      if (t === 'two') {
+        const p2 = Math.min(len, Math.max(1, parseInt(document.getElementById('pos2').value, 10) || 1)) - 1;
+        return p1 === p2 ? [p1] : [p1, p2];
+      }
+      if (t === 'burst') {
+        if (len === 1) return [0];
+        return [p1, p1 + 1 < len ? p1 + 1 : p1 - 1];
+      }
+      return [];
+    }
+
+    function runSim() {
+      const algo = document.getElementById('algo').value;
+      const inp = document.getElementById('data');
+      let clean = inp.value.replace(/[^01]/g, '');
+      if (clean.length < 2) clean = '1011';
+      if (clean.length > 12) clean = clean.slice(0, 12);
+      inp.value = clean;
+
+      const d = clean.split('').map(Number);
+      let frame = [];
+
+      if (algo === 'parity_even' || algo === 'parity_odd') {
+        const ones = d.reduce((a, b) => a + b, 0);
+        const p = algo === 'parity_even' ? (ones % 2 === 0 ? 0 : 1) : (ones % 2 === 0 ? 1 : 0);
+        d.forEach((b, i) => frame.push({ b, t: 'd', lbl: `D${i + 1}` }));
+        frame.push({ b: p, t: 'c', lbl: 'P' });
+      } else if (algo === 'checksum') {
+        const pad = clean.padStart(Math.ceil(clean.length / 4) * 4, '0');
+        let sum = 0;
+        for (let i = 0; i < pad.length; i += 4) sum += parseInt(pad.slice(i, i + 4), 2);
+        while (sum > 15) sum = (sum & 15) + (sum >> 4);
+        const cs = ((~sum) & 15).toString(2).padStart(4, '0').split('').map(Number);
+        pad.split('').map(Number).forEach((b, i) => frame.push({ b, t: 'd', lbl: `D${i + 1}` }));
+        cs.forEach((b, i) => frame.push({ b, t: 'c', lbl: `C${i + 1}` }));
+      } else if (algo === 'crc') {
+        const gen = [1, 0, 1, 1];
+        const w = [...d, 0, 0, 0];
+        for (let i = 0; i <= w.length - gen.length; i++) {
+          if (w[i] === 1) for (let j = 0; j < gen.length; j++) w[i + j] ^= gen[j];
+        }
+        const rem = w.slice(-3);
+        d.forEach((b, i) => frame.push({ b, t: 'd', lbl: `D${i + 1}` }));
+        rem.forEach((b, i) => frame.push({ b, t: 'c', lbl: `R${i + 1}` }));
+      } else if (algo === 'hamming') {
+        const m = d.length;
+        let r = 0;
+        while ((1 << r) < m + r + 1) r++;
+        const tot = m + r;
+        const arr = new Array(tot + 1).fill(null);
+        let di = 0;
+        for (let i = 1; i <= tot; i++) if ((i & (i - 1)) !== 0) arr[i] = { b: d[di++], t: 'd', lbl: `D${di}` };
+        for (let p = 0; p < r; p++) {
+          const pos = 1 << p;
+          let par = 0;
+          for (let i = 1; i <= tot; i++) if (i !== pos && (i & pos)) par ^= arr[i].b;
+          arr[pos] = { b: par, t: 'c', lbl: `P${pos}` };
+        }
+        frame = arr.slice(1);
+      }
+
+      fillPositions(frame.length);
+      toggleInputs();
+
+      const badSpots = getBadSpots(frame.length);
+      const rxFrame = frame.map((x, i) => badSpots.includes(i) ? { ...x, b: x.b ^ 1, bad: true } : { ...x, bad: false });
+
+      document.getElementById('bitsRow').innerHTML = rxFrame.map((x, i) => `
+        <div class="bit ${x.t === 'd' ? 'b-d' : 'b-c'} ${x.bad ? 'b-err' : ''}">
+          <strong>${x.b}</strong>
+          <span>#${i + 1} ${x.lbl}</span>
+        </div>
+      `).join('');
+
+      showResult(algo, frame, rxFrame, badSpots);
+      showAlts(algo);
+    }
+
+    function showResult(algo, origFrame, rxFrame, badSpots) {
+      const origStr = origFrame.map(x => x.b).join('');
+      const rxStr = rxFrame.map(x => x.b).join('');
+      const rx = rxFrame.map(x => x.b);
+      const count = badSpots.length;
+      const where = badSpots.map(i => `#${i + 1}`).join(', ');
+
+      const banner = document.getElementById('statusBanner');
+      const rxCard = document.getElementById('rxCard');
+      const rightCard = document.getElementById('rightCard');
+
+      if (count === 0) {
+        banner.className = 'banner ok';
+        banner.innerHTML = `<span>No Error</span><span>OK</span>`;
+        rxCard.innerHTML = `<strong>Received</strong><span class="mono">${rxStr}</span>`;
+        rightCard.innerHTML = `<strong>Correct</strong><span class="mono">${origStr}</span>`;
+        return;
+      }
+
+      if (algo === 'parity_even' || algo === 'parity_odd') {
+        const ones = rx.reduce((a, b) => a + b, 0);
+        const ok = algo === 'parity_even' ? ones % 2 === 0 : ones % 2 === 1;
+        banner.className = 'banner err';
+        banner.innerHTML = `<span>Error at ${where}</span><span>${ok ? 'Missed' : 'Caught'}</span>`;
+        rxCard.innerHTML = `<strong>Received</strong><span class="mono">${rxStr}</span>`;
+        rightCard.innerHTML = `<strong>Correct</strong><span class="mono">${origStr}</span>`;
+      } else if (algo === 'checksum') {
+        let sum = 0;
+        for (let i = 0; i < rx.length; i += 4) sum += parseInt(rx.slice(i, i + 4).join(''), 2);
+        while (sum > 15) sum = (sum & 15) + (sum >> 4);
+        const chk = (~sum) & 15;
+        banner.className = 'banner err';
+        banner.innerHTML = `<span>Error at ${where}</span><span>${chk === 0 ? 'Missed' : 'Caught'}</span>`;
+        rxCard.innerHTML = `<strong>Received</strong><span class="mono">${rxStr}</span>`;
+        rightCard.innerHTML = `<strong>Correct</strong><span class="mono">${origStr}</span>`;
+      } else if (algo === 'crc') {
+        const gen = [1, 0, 1, 1];
+        const w = [...rx];
+        for (let i = 0; i <= w.length - gen.length; i++) {
+          if (w[i] === 1) for (let j = 0; j < gen.length; j++) w[i + j] ^= gen[j];
+        }
+        const rem = w.slice(-3);
+        banner.className = 'banner err';
+        banner.innerHTML = `<span>Error at ${where}</span><span>Rem: ${rem.join('')}</span>`;
+        rxCard.innerHTML = `<strong>Received</strong><span class="mono">${rxStr}</span>`;
+        rightCard.innerHTML = `<strong>Correct</strong><span class="mono">${origStr}</span>`;
+      } else if (algo === 'hamming') {
+        let r = 0;
+        while ((1 << r) <= rx.length) r++;
+        let syn = 0;
+        for (let p = 0; p < r; p++) {
+          const pos = 1 << p;
+          let par = 0;
+          for (let i = 1; i <= rx.length; i++) if (i & pos) par ^= rx[i - 1];
+          if (par !== 0) syn += pos;
+        }
+        if (count === 1 && syn > 0 && syn <= rx.length) {
+          banner.className = 'banner fix';
+          banner.innerHTML = `<span>Error at ${where} — Fixed</span><span>Bit #${syn}</span>`;
+          rxCard.innerHTML = `<strong>Received</strong><span class="mono">${rxStr}</span>`;
+          rightCard.innerHTML = `<strong>Fixed</strong><span class="mono">${origStr}</span>`;
+        } else {
+          banner.className = 'banner err';
+          banner.innerHTML = `<span>Error at ${where}</span><span>1-Bit Fix Only</span>`;
+          rxCard.innerHTML = `<strong>Received</strong><span class="mono">${rxStr}</span>`;
+          rightCard.innerHTML = `<strong>Correct</strong><span class="mono">${origStr}</span>`;
+        }
+      }
+    }
+
+    const four = {
+      parity_even: { name: "Parity", tip: "Quick 1-bit check.", key: "parity_even" },
+      checksum: { name: "Checksum", tip: "Adds 4-bit blocks.", key: "checksum" },
+      crc: { name: "CRC", tip: "Stronger error check.", key: "crc" },
+      hamming: { name: "Hamming", tip: "Fixes a 1-bit error.", key: "hamming" }
+    };
+
+    function showAlts(curr) {
+      const curKey = curr.startsWith('parity') ? 'parity_even' : curr;
+      const list = Object.keys(four).filter(k => k !== curKey);
+      document.getElementById('altCards').innerHTML = list.map(k => `
+        <div class="alt">
+          <div><strong>${four[k].name}</strong><p>${four[k].tip}</p></div>
+          <button class="btn btn-soft" onclick="tryInSim('${four[k].key}')">Use ${four[k].name}</button>
+        </div>
+      `).join('');
+    }
+
+    pickGuide(0, document.querySelector('.pill'));
+    runSim();
+  </script>
+</body>
+</html>
